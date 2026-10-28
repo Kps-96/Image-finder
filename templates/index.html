@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drupal Media Visual & Semantic Search Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="logo-icon">🔍</div>
+        <div>
+          <h1>Drupal Media Visual & Semantic Search</h1>
+          <p class="subtitle">Deep Neural Search &middot; Multi-Perceptual Hashing &middot; 792 Drupal Assets</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-ai"><span class="ai-sparkle">✨</span> MobileNetV2 Deep Neural Search</span>
+        <span class="badge badge-indexed"><span class="pulse-dot"></span> <strong id="totalIndexed">{{ total_images }}</strong> Items</span>
+        <button id="themeToggle" class="btn-icon" title="Toggle Theme">🌓</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Search Mode Navigation Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-tab="visual">
+        <span class="tab-icon">📸</span>
+        <span>Visual & Screenshot Search</span>
+      </button>
+      <button class="mode-tab" data-tab="text">
+        <span class="tab-icon">✍️</span>
+        <span>Search by Text (No Screenshot)</span>
+      </button>
+      <button class="mode-tab" data-tab="url">
+        <span class="tab-icon">🌐</span>
+        <span>Search by Image URL</span>
+      </button>
+      <button class="mode-tab" data-tab="gallery">
+        <span class="tab-icon">🗂️</span>
+        <span>Media Library Explorer (792)</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Visual Search (Screenshots & Crops) -->
+    <section class="search-panel tab-content" id="tabContentVisual">
+      <div class="upload-dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <div class="dropzone-content" id="dropzonePrompt">
+          <div class="upload-icon">📸</div>
+          <h3>Drop a screenshot or image here</h3>
+          <p>or click to browse from your device</p>
+          <div class="paste-hint">
+            <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste screenshot directly anywhere on page
+          </div>
+        </div>
+
+        <!-- Preview & Crop Stage -->
+        <div class="crop-stage" id="cropStage" style="display: none;">
+          <div class="stage-toolbar">
+            <div class="stage-info">
+              <span id="imageDimsBadge" class="pill">0 &times; 0 px</span>
+              <span id="cropHintText" class="crop-hint">Click & drag on image to crop a region (or search entire image)</span>
+            </div>
+            <div class="stage-actions">
+              <button id="btnSearchEntire" class="btn btn-secondary">Search Entire Image</button>
+              <button id="btnSearchCrop" class="btn btn-primary" style="display: none;">Search Selected Region</button>
+              <button id="btnResetCrop" class="btn btn-secondary" style="display: none;">Reset Crop</button>
+              <button id="btnClearImage" class="btn btn-outline">Change Image</button>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="cropCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Row -->
+      <div class="controls-bar">
+        <div class="control-group threshold-group">
+          <label for="thresholdRange">
+            <span>Minimum Match Threshold:</span>
+            <strong id="thresholdValue" class="threshold-pill">80%</strong>
+          </label>
+          <div class="slider-wrapper">
+            <span class="slider-min">50%</span>
+            <input type="range" id="thresholdRange" min="50" max="98" step="1" value="80">
+            <span class="slider-max">98%</span>
+          </div>
+        </div>
+
+        <div class="control-group filter-group">
+          <label>Filter Bundle:</label>
+          <div class="segmented-control">
+            <button class="seg-btn active" data-filter="all">All (792)</button>
+            <button class="seg-btn" data-filter="image">Images (616)</button>
+            <button class="seg-btn" data-filter="svg_image">SVGs (176)</button>
+          </div>
+        </div>
+
+        <button id="btnSearchTrigger" class="btn btn-search">
+          <span>Search Images</span> 🚀
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 2: Text & Keyword Search (Without Screenshot) -->
+    <section class="search-panel tab-content" id="tabContentText" style="display: none;">
+      <div class="text-search-container">
+        <div class="text-search-header">
+          <h3>Search Images by Title, Keyword, Filename, or Drupal Media ID</h3>
+          <p>Find any image in the collection without taking a screenshot.</p>
+        </div>
+        <div class="search-bar-row">
+          <div class="search-input-wrapper">
+            <span class="search-lens">🔍</span>
+            <input type="text" id="textSearchInput" placeholder="Try 'woman smiling', 'dental exam', '824', 'lifesmiles', 'invisalign', 'root canal'..." autofocus>
+            <button id="textSearchClear" class="clear-btn" style="display: none;">&times;</button>
+          </div>
+          <button id="btnTextSearchSubmit" class="btn btn-search">
+            <span>Search Text</span> 🚀
+          </button>
+        </div>
+        <div class="quick-tags">
+          <span>Quick queries:</span>
+          <button class="tag-pill" data-q="Woman smiling">Woman smiling</button>
+          <button class="tag-pill" data-q="Dental cleanings">Dental cleanings</button>
+          <button class="tag-pill" data-q="lifesmiles">lifesmiles logo</button>
+          <button class="tag-pill" data-q="ADA Badge">ADA Badge</button>
+          <button class="tag-pill" data-q="Invisalign">Invisalign</button>
+          <button class="tag-pill" data-q="824">MID: 824</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Search by URL (Without Screenshot) -->
+    <section class="search-panel tab-content" id="tabContentUrl" style="display: none;">
+      <div class="url-search-container">
+        <div class="text-search-header">
+          <h3>Search by Direct Image URL</h3>
+          <p>Enter any remote image URL or Drupal CDN link to find matching images in the library.</p>
+        </div>
+        <div class="search-bar-row">
+          <div class="search-input-wrapper">
+            <span class="search-lens">🔗</span>
+            <input type="url" id="urlSearchInput" placeholder="https://dam.nadentalgroup.com/sites/default/files/... or any web image URL">
+          </div>
+          <button id="btnUrlSearchSubmit" class="btn btn-search">
+            <span>Search URL</span> 🚀
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Media Library Gallery Explorer -->
+    <section class="gallery-panel tab-content" id="tabContentGallery" style="display: none;">
+      <div class="gallery-toolbar">
+        <div class="gallery-filters">
+          <input type="text" id="galleryFilterInput" class="gallery-search-input" placeholder="Filter library by name, file, or MID...">
+          <div class="segmented-control">
+            <button class="gallery-seg-btn active" data-gfilter="all">All (792)</button>
+            <button class="gallery-seg-btn" data-gfilter="image">Images (616)</button>
+            <button class="gallery-seg-btn" data-gfilter="svg_image">SVGs (176)</button>
+          </div>
+        </div>
+        <div class="gallery-pagination-info" id="galleryPageInfo">Showing 1-36 of 792</div>
+      </div>
+      <div class="results-grid" id="galleryGrid"></div>
+      <div class="gallery-pagination" id="galleryPagination">
+        <button id="btnPrevPage" class="btn btn-secondary">&laquo; Previous</button>
+        <span id="galleryCurrentPage">Page 1 of 22</span>
+        <button id="btnNextPage" class="btn btn-secondary">Next &raquo;</button>
+      </div>
+    </section>
+
+    <!-- Results Section for Search Queries -->
+    <section class="results-section" id="resultsSection">
+      <div class="results-header" id="resultsHeader" style="display: none;">
+        <div>
+          <h2>Search Matches</h2>
+          <p id="resultsStats" class="results-stats">Showing matches</p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" id="loadingState" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loadingMessage">Scanning 792 visual signatures & deep embeddings...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🖼️</div>
+        <h3>Ready to Search</h3>
+        <p>Drop a screenshot, paste with <kbd>Ctrl+V</kbd>, or switch to <strong>Search by Text</strong> to find images by title or Media ID.</p>
+      </div>
+
+      <!-- Results Grid -->
+      <div class="results-grid" id="resultsGrid"></div>
+    </section>
+  </main>
+
+  <!-- Image Detail Modal -->
+  <div class="modal" id="imageModal" style="display: none;">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-dialog">
+      <button class="modal-close" id="modalClose">&times;</button>
+      <div class="modal-body">
+        <div class="modal-image-col">
+          <img id="modalImg" src="" alt="Full preview">
+        </div>
+        <div class="modal-info-col">
+          <div class="modal-match-badge" id="modalMatchBadge">100% MATCH</div>
+          <h3 id="modalTitle">Media Name</h3>
+
+          <table class="modal-table">
+            <tr>
+              <td><strong>Media ID:</strong></td>
+              <td id="modalMid">827</td>
+            </tr>
+            <tr>
+              <td><strong>Bundle:</strong></td>
+              <td id="modalBundle">image</td>
+            </tr>
+            <tr>
+              <td><strong>Filename:</strong></td>
+              <td id="modalFilename" class="code-font">file.png</td>
+            </tr>
+            <tr>
+              <td><strong>Dimensions:</strong></td>
+              <td id="modalDims">1920 &times; 1080</td>
+            </tr>
+            <tr>
+              <td><strong>File Size:</strong></td>
+              <td id="modalSize">245 KB</td>
+            </tr>
+            <tr>
+              <td><strong>Alt Text:</strong></td>
+              <td id="modalAlt">-</td>
+            </tr>
+            <tr>
+              <td><strong>Local Path:</strong></td>
+              <td><span id="modalLocalPath" class="code-font truncate-text"></span></td>
+            </tr>
+          </table>
+
+          <div class="modal-actions">
+            <button id="modalBtnFindSimilar" class="btn btn-search">🔍 Find Visually Similar Images</button>
+            <button id="modalBtnCopyPath" class="btn btn-secondary">📋 Copy Local Path</button>
+            <a id="modalBtnRemote" href="#" target="_blank" class="btn btn-outline">🌐 View Origin CDN</a>
+            <a id="modalBtnDownload" href="#" download class="btn btn-primary">⬇️ Download File</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>Drupal Media Search Engine &middot; Powered by MobileNetV2 Deep Neural Features &amp; Perceptual Hashing &middot; Palm Bay Dental</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
